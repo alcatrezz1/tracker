@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#192d4a"><title>Game Trend Radar · Roblox + Steam</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="./" aria-label="Game Trend Radar"><span class="brand-mark">↗</span><span>GAME TREND<br><b>RADAR</b></span></a>
+  <div class="workspace-label">ИССЛЕДОВАНИЕ РЫНКА</div>
+  <nav aria-label="Основная навигация">
+    <button data-view="radar" class="nav-item active"><span>◉</span> Радар игр</button>
+    <button data-view="new" class="nav-item"><span>↗</span> Новые хиты <small id="new-count">0</small></button>
+    <button data-view="upcoming" class="nav-item"><span>◷</span> Ожидаемые релизы</button>
+    <button data-view="meta" class="nav-item"><span>▦</span> Механики и мета</button>
+    <button data-view="watchlist" class="nav-item"><span>☆</span> Наблюдение <small id="watch-count">0</small></button>
+  </nav>
+  <div class="sidebar-bottom"><button data-view="logs" class="nav-item"><span>≋</span> Журнал источников</button><button data-view="method" class="nav-item"><span>ⓘ</span> Как считаем</button><button id="settings-button" class="nav-item"><span>⚙</span> Настройки</button><div class="local-label"><i></i> Локально на вашем компьютере<br><span>История хранится в SQLite</span></div></div>
+</aside>
+<div class="workspace">
+  <header class="topbar"><div class="breadcrumb">Обзор рынка <span>/</span> <strong id="breadcrumb">Радар игр</strong></div><div class="topbar-actions"><a href="api/export.csv" id="csv-link" class="button quiet">↓ CSV всех игр</a><button class="button quiet" id="add-button">＋ Добавить игру</button><button class="button primary" id="scan-button">↻ Собрать данные</button></div></header>
+  <main id="main">
+    <div class="page-heading"><div><div class="eyebrow">ROBLOX × STEAM <span class="dot">•</span> СИГНАЛЫ ДЛЯ РАЗРАБОТЧИКА</div><h1 id="page-title">Что набирает игроков</h1><p id="page-description">Находите спрос раньше, чем выбираете идею для следующей игры.</p></div><div class="collection-status" aria-live="polite"><span id="status-dot" class="status-dot"></span><div><b id="status-label">Подключение…</b><small id="status-time">Проверяем локальную базу</small></div></div></div>
+    <div id="notice" class="notice" hidden></div>
+    <section id="overview" class="overview" aria-label="Сводка выборки"></section>
+    <section id="content" aria-live="polite"><div class="empty">Загрузка данных…</div></section>
+    <footer>GAME TREND RADAR <span>Публичная выборка рынка · история с первого замера · оценки объяснимы</span></footer>
+  </main>
+</div>
+<dialog id="detail-dialog" class="detail-dialog"><div id="detail-content"></div></dialog>
+<dialog id="settings-dialog"><form id="settings-form"><div class="dialog-heading"><div><div class="eyebrow">ПАРАМЕТРЫ РАДАРА</div><h2>Настройки сбора</h2></div><button type="button" data-close="settings-dialog" class="icon-button" aria-label="Закрыть">×</button></div><div class="form-grid">
+<label>Интервал, минут<input name="interval_minutes" type="number" min="15" max="1440" required></label><label>Игр на ленту Steam<input name="steam_limit" type="number" min="5" max="100" required></label>
+<label>Новых кандидатов Roblox<input name="roblox_limit" type="number" min="25" max="1000" required></label><label>Считать новыми до, дней<input name="recent_days" type="number" min="1" max="730" required></label>
+<label>Минимальный онлайн / прирост<input name="min_players" type="number" min="1" max="1000000" required></label><label>Порог сигнала роста, % за сутки<input name="growth_alert_pct" type="number" min="1" max="10000" required></label>
+<label>Регион витрин<input name="country" pattern="[A-Za-z]{2}" maxlength="2" required></label><label>Устройство Roblox<select name="device"><option value="computer">Компьютер</option><option value="high_end_phone">Телефон</option><option value="console">Консоль</option></select></label>
+</div><label class="checkbox-label"><input name="auto_scan" type="checkbox"> Собирать автоматически, пока программа открыта</label><p class="muted">Steam: четыре ленты; лимит применяется к каждой. Больше игр — дольше сбор. Избранные продолжают отслеживаться после выхода из рейтингов.</p><div class="dialog-actions"><button type="button" data-close="settings-dialog" class="button quiet">Отмена</button><button class="button primary" type="submit">Сохранить настройки</button></div><p class="form-message" id="settings-message" role="status"></p></form></dialog>
+<dialog id="add-dialog"><form id="add-form"><div class="dialog-heading"><h2>Добавить в наблюдение</h2><button type="button" data-close="add-dialog" class="icon-button" aria-label="Закрыть">×</button></div><label>Ссылка на игру<input name="url" type="text" required placeholder="https://www.roblox.com/games/…" maxlength="1000"></label><p class="muted">Также можно указать steam:APP_ID или roblox:UNIVERSE_ID. Для Roblox ID места и ID вселенной различаются.</p><button class="button primary" type="submit">Получить данные и наблюдать</button><p id="add-message" class="form-message" role="status"></p></form></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+</body></html>

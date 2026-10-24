@@ -1,0 +1,88 @@
+# Collects fresh data every hour and publishes the read-only dashboard to GitHub Pages.
+# The SQLite database lives gzipped on the orphan branch "db" (force-pushed, so its history never grows).
+name: Collect and publish
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      collect:
+        description: "Run a collection before publishing"
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      COLLECT: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.collect) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Restore database
+        run: |
+          mkdir -p data
+          if git fetch --depth=1 origin db; then
+            git show origin/db:radar.sqlite3.gz | gunzip > data/radar.sqlite3
+            echo "Restored $(du -h data/radar.sqlite3 | cut -f1)"
+          else
+            echo "No db branch yet, starting with an empty database"
+          fi
+
+      - name: Collect
+        if: env.COLLECT == 'true'
+        run: |
+          set +e
+          python app.py --collect
+          code=$?
+          tail -n 20 data/server.log || true
+          # 2 = partial data (some sources failed): still publish what we have.
+          if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then exit "$code"; fi
+
+      - name: Build site
+        run: python tools/build_static.py --out site --interval-minutes 60
+
+      - name: Save database
+        if: env.COLLECT == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          dir="$RUNNER_TEMP/db"
+          rm -rf "$dir" && mkdir -p "$dir" && cd "$dir"
+          git init -q -b db
+          gzip -9 -c "$GITHUB_WORKSPACE/data/radar.sqlite3" > radar.sqlite3.gz
+          git add radar.sqlite3.gz
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "Database snapshot $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" db
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
